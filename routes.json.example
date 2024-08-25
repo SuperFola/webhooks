@@ -1,0 +1,7 @@
+{
+  "/route-name-here": {
+    "secret": "my secret",
+    "folder": "absolute path to folder in volume",
+    "branch": "master"
+  }
+}
