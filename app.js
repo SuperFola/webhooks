@@ -12,6 +12,9 @@ const sigHashAlg = 'sha256';
 const app = express();
 app.use(express.json());
 
+const sh_ok = (folder) => `/home/node/app/telegram-notif.sh -p ${folder} -m "updated successfully ✅"`;
+const sh_ko = (folder) => `/home/node/app/telegram-notif.sh -p ${folder} -m "failed to update ❌"`;
+
 const verifyPostData = (secret) => {
   return (req, res, next) => {
     if (!req.body) {
@@ -30,17 +33,24 @@ const verifyPostData = (secret) => {
   }
 };
 
-const cloneRepo = (folder, branch) => {
-  execSync(`git pull origin ${branch}`, {
-    stdio: [0, 1, 2],
-    cwd: resolve(__dirname, folder),
-  })
+const cloneRepo = (folder, branch, command) => {
+  if (branch.trim() !== '') {
+    execSync(`git pull origin ${branch} && ${command} && ${sh_ok(folder)} || ${sh_ko(folder)}`, {
+      stdio: [0, 1, 2],
+      cwd: resolve(__dirname, folder),
+    })
+  } else {
+    execSync(`${command} && ${sh_ok(folder)} || ${sh_ko(folder)}`, {
+      stdio: [0, 1, 2],
+      cwd: resolve(__dirname, folder),
+    })
+  }
 }
 
 for (let [route, data] of Object.entries(routes)) {
   app.post(route, verifyPostData(data.secret), (req, res) => {
     console.log(`Cloning ${data.folder} repository...`);
-    cloneRepo(data.folder, data.branch);
+    cloneRepo(data.folder, data.branch, data.command);
     res.status(204).send('{}');
   });
 }
